@@ -12,4 +12,26 @@ class Order extends Model
     {
         return $this->hasMany('App\Models\Ticket');
     }
+
+    public function cancel()
+    {
+        foreach ($this->tickets as $ticket) {
+            $ticket->release();
+        }
+
+        $this->delete();
+    }
+
+    public function ticketsQuantity()
+    {
+        return $this->tickets()->count();
+    }
+
+    public function toArray()
+    {
+        return [
+            'email' => $this->email,
+            'ticket_quantity'
+        ];
+    }
 }

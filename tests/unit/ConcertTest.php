@@ -5,6 +5,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\Concert;
 use Carbon\Carbon;
+use App\Exceptions\NotEnoughTicketsException;
 
 class ConcertTest extends TestCase
 {
@@ -52,12 +53,12 @@ class ConcertTest extends TestCase
 
     function test_can_order_concert_tickets()
     {
-        $concert = factory(Concert::class)->create();
+        $concert = factory(Concert::class)->create()->addTickets(3);
 
         $order = $concert->orderTickets('christian@example.com', 3);
 
         $this->assertEquals('christian@example.com', $order->email);
-        $this->assertEquals(3, $order->tickets()->count());
+        $this->assertEquals(3, $order->ticketsQuantity());
     }
 
     function test_can_add_tickets()
@@ -70,10 +71,42 @@ class ConcertTest extends TestCase
 
     function test_tickets_remaining_does_not_include_tickets_associated_with_an_order()
     {
-        $concert = factory(Concert::class)->create();
-        $concert->addTickets(50);
+        $concert = factory(Concert::class)->create()->addTickets(50);
         $order = $concert->orderTickets('christian@example.com', 30);
 
         $this->assertEquals(20, $concert->ticketsRemaining());
+    }
+
+    function test_trying_to_purchase_more_tickets_than_remain_throws_an_exception()
+    {
+        $concert = factory(Concert::class)->create()->addTickets(10);
+
+        try {
+            $concert->orderTickets('christian@example.com', 11);
+        } catch (NotEnoughTicketsException $e) {
+            $this->assertFalse($concert->hasOrderFor('christian@example.com'));
+            $this->assertEquals(10, $concert->ticketsRemaining());
+
+            return;
+        }
+
+        $this->fail("Order successed event there wasn't enough tickets");
+    }
+
+    function test_cannot_order_tickets_have_already_been_purchased()
+    {
+        $concert = factory(Concert::class)->create()->addTickets(10);
+        $concert->orderTickets('test@test.com', 8);
+
+        try {
+            $concert->orderTickets('christian@example.com', 3);
+        } catch (NotEnoughTicketsException $e) {
+            $this->assertFalse($concert->hasOrderFor('christian@example.com'));
+            $this->assertEquals(2, $concert->ticketsRemaining());
+
+            return;
+        }
+
+        $this->fail("Order successed event there wasn't enough tickets");
     }
 }
