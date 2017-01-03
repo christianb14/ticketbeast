@@ -8,6 +8,11 @@ class Order extends Model
 {
     protected $guarded = [];
 
+    public function concert()
+    {
+        return $this->belongsTo('App\Models\Concert');
+    }
+
     public function tickets()
     {
         return $this->hasMany('App\Models\Ticket');
@@ -31,7 +36,8 @@ class Order extends Model
     {
         return [
             'email' => $this->email,
-            'ticket_quantity'
+            'ticket_quantity' => $this->ticketsQuantity(),
+            'amount' => $this->amount
         ];
     }
 }
