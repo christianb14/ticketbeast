@@ -8,6 +8,25 @@ class Order extends Model
 {
     protected $guarded = [];
 
+    public static function ForTickets($email, $tickets, $amount)
+    {
+        $order = self::create([
+            'email' => $email,
+            'amount' => $amount
+        ]);
+
+        foreach ($tickets as $ticket) { 
+            $order->tickets()->save($ticket);
+        }
+
+        return $order;
+    } 
+
+    public function concert()
+    {
+        return $this->belongsTo('App\Models\Concert');
+    }
+
     public function tickets()
     {
         return $this->hasMany('App\Models\Ticket');
@@ -31,7 +50,8 @@ class Order extends Model
     {
         return [
             'email' => $this->email,
-            'ticket_quantity'
+            'ticket_quantity' => $this->ticketsQuantity(),
+            'amount' => $this->amount
         ];
     }
 }

@@ -33,7 +33,7 @@ class Concert extends Model
 
     public function orders()
     {
-        return $this->hasMany('App\Models\Order');
+        return $this->belongsToMany('App\Models\Order', 'tickets');
     }
 
     public function hasOrderFor($customerEmail)
@@ -53,18 +53,25 @@ class Concert extends Model
 
     public function orderTickets($email, $ticket_quantity)
     {
+        $tickets = $this->findTickets($ticket_quantity);
+
+        return $this->createOrder($email, $tickets);
+    }
+
+    public function findTickets($ticket_quantity)
+    {
         $tickets = $this->tickets()->available()->take($ticket_quantity)->get();
         
         if($tickets->count() < $ticket_quantity) {
             throw new NotEnoughTicketsException;
         }
-        $order = $this->orders()->create(['email' => $email]);
 
-        foreach ($tickets as $ticket) { 
-            $order->tickets()->save($ticket);
-        }
+        return $tickets;
+    }
 
-        return $order;
+    public function createOrder($email, $tickets)
+    {
+        return Order::ForTickets($email, $tickets, $tickets->sum('price'));
     }
 
     public function addTickets($quantity)
