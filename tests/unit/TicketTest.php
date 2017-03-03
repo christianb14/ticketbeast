@@ -4,21 +4,28 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\Concert;
+use App\Models\Ticket;
 
 class TicketTest extends TestCase
 {
     use DatabaseMigrations;
 
+    function test_a_ticket_can_be_reserved()
+    {
+        $ticket = factory(Ticket::class)->create();
+        $this->assertNull($ticket->reserved_at);
+
+        $ticket->reserve();
+
+        $this->assertNotNull($ticket->fresh()->reserved_at);
+    }
+
     function test_a_ticket_can_be_release()
     {
-        $concert = factory(Concert::class)->create();
-        $concert->addTickets(1);
-        $order = $concert->orderTickets('christian@example.com', 1);
-        $ticket = $order->tickets()->first();
+        $ticket = factory(Ticket::class)->states('reserved')->create();
+        $this->assertNotNull($ticket->reserved_at);
 
-        $this->assertEquals($order->id, $ticket->order_id);
         $ticket->release();
-
-        $this->assertNull($ticket->fresh()->order_id);
+        $this->assertNull($ticket->fresh()->reserved_at);
     }
 }
